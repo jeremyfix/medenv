@@ -4,11 +4,15 @@ This package provides several utilities for requesting environmental measures in
 
 ## Installation
 
-In order to install the package, since it is not yet available in pypi, you can :
+In order to install the package, you can install the latest release with :
+
+    pip install medenv
+
+You can also install, using pip, the current version on the main branch by either :
 
 	python3 -m pip install git+https://github.com/jeremyfix/medenv.git
 
-You can also install it by cloning the repository
+Or, you can also install it by cloning the repository
 	
 	git clone https://github.com/jeremyfix/medenv.git
 	python3 -m venv venv
