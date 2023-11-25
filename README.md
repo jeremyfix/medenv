@@ -8,6 +8,13 @@ In order to install the package, since it is not yet available in pypi, you can 
 
 	python3 -m pip install git+https://github.com/jeremyfix/medenv.git
 
+You can also install it by cloning the repository
+	
+	git clone https://github.com/jeremyfix/medenv.git
+	python3 -m venv venv
+	source venv/bin/activate
+	python -m pip install medenv
+
 ## Usage
 
 Check the examples in the `examples/` directory, but basically, grabbing environmental variables require a `Fetcher` to which you specify which features you want to grab and then provides `(latitude, longitude, time, depth)` requests: 
@@ -49,3 +56,5 @@ depth = 6
 
 values, info_values = fetcher.get_values(date, (long0, lat0), depth)
 ```
+
+The request accepts a range for the longitude/latitude and a single value for the date and depth. For both the date and depth, the fetcher will grab the closest values.
