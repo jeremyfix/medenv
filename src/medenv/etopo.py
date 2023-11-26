@@ -89,6 +89,16 @@ def get_value(longitude, latitude):
         latitude : degrees north
     """
     fetch_values()
+
+    # TODO: for now, return the bathymetry of the middle point
+    # We could, as for cmems, return all the values in the longitude x latitude
+    # range
+    #
+    if isinstance(longitude, tuple):
+        longitude = 0.5 * (longitude[0] + longitude[1])
+    if isinstance(latitude, tuple):
+        latitude = 0.5 * (latitude[0] + latitude[1])
+
     assert (longvals.min() <= longitude <= longvals.max()) and (
         latvals.min() <= latitude <= latvals.max()
     )
