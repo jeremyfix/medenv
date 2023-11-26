@@ -42,7 +42,6 @@ class Fetcher:
         self.features = features
         self.getters = {}
         self.cmems_getter = None
-        print(len(Fetcher._available_features))
         for f in features:
             if f not in Fetcher._available_features:
                 raise ValueError(
