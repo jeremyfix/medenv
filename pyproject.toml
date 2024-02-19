@@ -1,6 +1,6 @@
 [project]
 name = "medenv"
-version = "1.0.4"
+dynamic = ["version"]
 readme = "README.md"
 
 dependencies = [
@@ -11,3 +11,6 @@ dependencies = [
     "lxml >= 4.9.3",
 	"copernicusmarine >= 1.0.2"
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "medenv.__version__"}
