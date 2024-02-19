@@ -1,4 +1,11 @@
+
 # Environmental measures from mediterranean see
+
+<p align="right">
+<a href="https://anaconda.org/conda-forge/medenv"><img src="https://anaconda.org/conda-forge/medenv/badges/version.svg"></a>
+<a href="https://pypi.python.org/pypi/medenv/"><img src="https://badge.fury.io/py/medenv.svg" alt="PyPi Version"/></a>
+<a href="https://github.com/jeremyfix/medenv?tab=GPL-3.0-1-ov-file#readme"><img src="https://img.shields.io/github/license/jeremyfix/medenv" alt="License"/></a>
+</p>
 
 This package provides several utilities for requesting environmental measures in the Mediterrannean see. 
 
