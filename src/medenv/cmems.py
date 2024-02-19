@@ -25,8 +25,10 @@ from typing import Union
 
 # External modules
 import getpass
+import numpy as np
 import xarray as xr
 import copernicusmarine
+from copernicusmarine.core_functions.models import DEFAULT_SUBSET_METHOD, SubsetMethod
 
 
 class CMEMS(object):
@@ -185,34 +187,6 @@ class CMEMS(object):
             raise RuntimeError("Login to cmems unsucessfull, aborting...")
 
         logging.info("Connection to cmems successfull")
-        self.datastores = {}
-
-    def fetch(self, prefix_dataset, dataset):
-        if dataset not in self.datastores:
-            logging.info(f"Opening the connection to the dataset {dataset}")
-            url = f"https://{prefix_dataset}.cmems-du.eu/thredds/dodsC/{dataset}"
-            retries = 0
-            while True:
-                try:
-                    logging.debug(f"Opening {url}")
-                    datastream = open_url(
-                        url, session=self.session, user_charset="utf-8"
-                    )
-                    logging.debug(f"Opened with datatype {type(datastream)}")
-                    data_store = xr.backends.PydapDataStore(datastream)
-                    break
-                except:
-                    logging.warning(
-                        f"Failure, one more retry, {self.num_retries-retries} remaining"
-                    )
-                    retries += 1
-                    if retries >= self.num_retries:
-                        raise RuntimeError("Cannot successfully access the dataset")
-            self.datastores[dataset] = xr.open_dataset(data_store)
-            logging.debug(
-                f"The downloaded datastore for {dataset} is : \n {self.datastores[dataset]} "
-            )
-        return self.datastores[dataset]
 
     def get_value(
         self,
@@ -222,50 +196,48 @@ class CMEMS(object):
         what: str,
         reduction=None,
     ):
-        def f_slice(ds, mode, date, long_lat, depth, has_depth):
-            if mode == "lon-lat":
-                key_lon = "lon"
-                key_lat = "lat"
-            else:
-                key_lon = "longitude"
-                key_lat = "latitude"
+        def f_slice(dataset_id, variable, date, long_lat, depth, has_depth):
+            subset_method = DEFAULT_SUBSET_METHOD
 
-            slice_coords_definition = {}
-            noslice_coords_definition = {
-                "method": "nearest",
-            }
-
+            params = {}
             if isinstance(long_lat[0], tuple):
-                slice_coords_definition[key_lon] = slice(*(long_lat[0]))
+                params["minimum_longitude"] = long_lat[0][0]
+                params["maximum_longitude"] = long_lat[0][1]
             else:
-                noslice_coords_definition[key_lon] = long_lat[0]
-
+                params["minimum_longitude"] = long_lat[0]
+                params["maximum_longitude"] = long_lat[0]
             if isinstance(long_lat[1], tuple):
-                slice_coords_definition[key_lat] = slice(*(long_lat[1]))
+                params["minimum_latitude"] = long_lat[1][0]
+                params["maximum_latitude"] = long_lat[1][1]
             else:
-                noslice_coords_definition[key_lat] = long_lat[1]
+                params["minimum_latitude"] = long_lat[1]
+                params["maximum_latitude"] = long_lat[1]
 
             if has_depth:
                 if isinstance(depth, tuple):
-                    slice_coords_definition["depth"] = slice(depth[0], depth[1])
+                    params["minimum_depth"] = depth[0]
+                    params["maximum_depth"] = depth[1]
                 else:
-                    noslice_coords_definition["depth"] = depth
+                    params["minimum_depth"] = depth
+                    params["maximum_depth"] = depth
 
             if isinstance(date, tuple):
-                slice_coords_definition["time"] = slice(date[0], date[1])
+                params["start_datetime"] = date[0]
+                params["end_datetime"] = date[1]
             else:
-                noslice_coords_definition["time"] = date
+                params["start_datetime"] = date
+                params["end_datetime"] = date
 
             # Drop duplicated indices
             # This happens for example with oxygen, nppv, ph, alkalinity, dissic
-            ds = ds.drop_duplicates(dim=...)
+            # ds = ds.drop_duplicates(dim=...)
 
-            # Select the slicing and no slicing from the dataset
-            values = ds.sel(**slice_coords_definition)
-            values = values.sel(**noslice_coords_definition)
-
-            # Convert the result into a dataframe
-            df_values = values.to_dataframe()
+            df_values = copernicusmarine.read_dataframe(
+                dataset_id=dataset_id,
+                variables=[variable],
+                subset_method=subset_method,
+                **params,
+            )
 
             # The noslice coordinates will appear as columns
             # we reset the index to get all the dimensions as columns
@@ -278,7 +250,9 @@ class CMEMS(object):
                 df_values["depth"] = depth
 
             # before defining our own expected ordering of the dimensions
-            df_values.set_index(["time", key_lon, key_lat, "depth"], inplace=True)
+            df_values.set_index(
+                ["time", "longitude", "latitude", "depth"], inplace=True
+            )
 
             # Ensure we always have longitude and latitude for spatial
             # coordinates
@@ -290,13 +264,22 @@ class CMEMS(object):
             else:
                 result = df_values
 
+            time_coords = np.unique(df_values.index.get_level_values("time").to_numpy())
+            longitude_coords = np.unique(
+                df_values.index.get_level_values("longitude").to_numpy()
+            )
+            latitude_coords = np.unique(
+                df_values.index.get_level_values("latitude").to_numpy()
+            )
+            depth_coords = np.unique(
+                df_values.index.get_level_values("depth").to_numpy()
+            )
+
             selected_coordinates = {
-                "time": values.coords["time"].to_numpy(),
-                key_lon: values.coords[key_lon].to_numpy(),
-                key_lat: values.coords[key_lat].to_numpy(),
-                "depth": values.coords["depth"].to_numpy()
-                if has_depth
-                else float("nan"),
+                "time": time_coords,
+                "longitude": longitude_coords,
+                "latitude": latitude_coords,
+                "depth": depth_coords if has_depth else float("nan"),
             }
             return result, selected_coordinates
 
@@ -309,12 +292,12 @@ class CMEMS(object):
                 not isinstance(date, tuple) and date < params["date_limit"]
             ):
                 raise ValueError(f"Cannot get {what} before {params['date_limit']}")
-            datastore = self.fetch(params["prefix"], params["dataset"])
-            logging.info(f"Slicing for {params['field']}")
+            # datastore = self.fetch(params["prefix"], params["dataset"])
+            logging.info(f"Slicing for {params['variable']}")
 
             return f_slice(
-                datastore[params["field"]],
-                params["slice_mode"],
+                params["dataset_id"],
+                params["variable"],
                 date,
                 long_lat,
                 depth,
