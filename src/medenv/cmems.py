@@ -26,9 +26,7 @@ from typing import Union
 # External modules
 import getpass
 import xarray as xr
-
-from pydap.client import open_url
-from pydap.cas.get_cookies import setup_session
+import copernicusmarine
 
 
 class CMEMS(object):
@@ -39,145 +37,127 @@ class CMEMS(object):
     # https://resources.marine.copernicus.eu/product-detail/MEDSEA_MULTIYEAR_BGC_006_008/INFORMATION
     _feature_params = {
         "temperature": {
-            "dataset": "med-cmcc-tem-rean-d",
-            "prefix": "my",
-            "field": "thetao",
+            "dataset_id": "med-cmcc-tem-rean-d",
+            "variable": "thetao",
             "slice_mode": "lon-lat",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1987", "%d-%m-%Y"),
         },
         "salinity": {
-            "dataset": "med-cmcc-sal-rean-d",
-            "prefix": "my",
-            "field": "so",
+            "dataset_id": "med-cmcc-sal-rean-d",
+            "variable": "so",
             "slice_mode": "lon-lat",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1987", "%d-%m-%Y"),
         },
         "eastward-water-velocity": {
-            "dataset": "med-cmcc-cur-rean-d",
-            "prefix": "my",
-            "field": "uo",
+            "dataset_id": "med-cmcc-cur-rean-d",
+            "variable": "uo",
             "slice_mode": "lon-lat",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1987", "%d-%m-%Y"),
         },
         "northward-water-velocity": {
-            "dataset": "med-cmcc-cur-rean-d",
-            "prefix": "my",
-            "field": "vo",
+            "dataset_id": "med-cmcc-cur-rean-d",
+            "variable": "vo",
             "slice_mode": "lon-lat",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1987", "%d-%m-%Y"),
         },
         "mixed-layer-thickness": {
-            "dataset": "med-cmcc-mld-rean-d",
-            "prefix": "my",
-            "field": "mlotst",
+            "dataset_id": "med-cmcc-mld-rean-d",
+            "variable": "mlotst",
             "slice_mode": "lon-lat",
             "has_depth": False,
             "date_limit": datetime.datetime.strptime("01-01-1987", "%d-%m-%Y"),
         },
         "sea-surface-above-geoid": {
-            "dataset": "med-cmcc-ssh-rean-d",
-            "prefix": "my",
-            "field": "zos",
+            "dataset_id": "med-cmcc-ssh-rean-d",
+            "variable": "zos",
             "slice_mode": "lon-lat",
             "has_depth": False,
             "date_limit": datetime.datetime.strptime("01-01-1987", "%d-%m-%Y"),
         },
         "phytoplankton-carbon-biomass": {
-            "dataset": "med-ogs-pft-rean-d",
-            "prefix": "my",
-            "field": "phyc",
+            "dataset_id": "med-ogs-pft-rean-d",
+            "variable": "phyc",
             "slice_mode": "longitude-latitude",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "chlorophyl-a": {
-            "dataset": "med-ogs-pft-rean-d",
-            "prefix": "my",
-            "field": "chl",
+            "dataset_id": "med-ogs-pft-rean-d",
+            "variable": "chl",
             "slice_mode": "longitude-latitude",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "nitrate": {
-            "dataset": "med-ogs-nut-rean-d",
-            "prefix": "my",
-            "field": "no3",
+            "dataset_id": "med-ogs-nut-rean-d",
+            "variable": "no3",
             "slice_mode": "longitude-latitude",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "phosphate": {
-            "dataset": "med-ogs-nut-rean-d",
-            "prefix": "my",
-            "field": "po4",
+            "dataset_id": "med-ogs-nut-rean-d",
+            "variable": "po4",
             "slice_mode": "longitude-latitude",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "ammonium": {
-            "dataset": "med-ogs-nut-rean-d",
-            "prefix": "my",
-            "field": "nh4",
+            "dataset_id": "med-ogs-nut-rean-d",
+            "variable": "nh4",
             "slice_mode": "longitude-latitude",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "net-primary-production": {
-            "dataset": "med-ogs-bio-rean-d",
-            "prefix": "my",
-            "field": "nppv",
+            "dataset_id": "med-ogs-bio-rean-d",
+            "variable": "nppv",
             "slice_mode": "longitude-latitude",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "oxygen": {
-            "dataset": "med-ogs-bio-rean-d",
-            "prefix": "my",
-            "field": "o2",
+            "dataset_id": "med-ogs-bio-rean-d",
+            "variable": "o2",
             "slice_mode": "longitude-latitude",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "ph": {
-            "dataset": "med-ogs-car-rean-d",
-            "prefix": "my",
-            "field": "ph",
+            "dataset_id": "med-ogs-car-rean-d",
+            "variable": "ph",
             "slice_mode": "longitude-latitude",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "dissolved-inorganic-carbon": {
-            "dataset": "med-ogs-car-rean-d",
-            "prefix": "my",
-            "field": "dissic",
+            "dataset_id": "med-ogs-car-rean-d",
+            "variable": "dissic",
             "slice_mode": "longitude-latitude",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "alkalinity": {
-            "dataset": "med-ogs-car-rean-d",
-            "prefix": "my",
-            "field": "talk",
+            "dataset_id": "med-ogs-car-rean-d",
+            "variable": "talk",
             "slice_mode": "longitude-latitude",
             "has_depth": True,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "surface-partial-pressure-co2": {
-            "dataset": "med-ogs-co2-rean-d",
-            "prefix": "my",
-            "field": "spco2",
+            "dataset_id": "med-ogs-co2-rean-d",
+            "variable": "spco2",
             "slice_mode": "longitude-latitude",
             "has_depth": False,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
         },
         "surface-co2-flux": {
-            "dataset": "med-ogs-co2-rean-d",
-            "prefix": "my",
-            "field": "fpco2",
+            "dataset_id": "med-ogs-co2-rean-d",
+            "variable": "fpco2",
             "slice_mode": "longitude-latitude",
             "has_depth": False,
             "date_limit": datetime.datetime.strptime("01-01-1999", "%d-%m-%Y"),
@@ -185,10 +165,8 @@ class CMEMS(object):
     }
 
     def __init__(self, num_retries=10):
-        # The following code is adapted from
-        # https://help.marine.copernicus.eu/en/articles/4854800-how-to-manipulate-copernicus-marine-data-using-python
-        self.num_retries = num_retries
-        cas_url = "https://cmems-cas.cls.fr/cas/login"
+        # https://help.marine.copernicus.eu/en/articles/8287609-copernicus-marine-toolbox-api-open-a-dataset-or-read-a-dataframe-remotely
+        # Copernicus Marine Toolbox API - Open a dataset or read a dataframe remotely
         username = os.getenv("CMEMS_USERNAME")
         if not username:
             logging.warning("Undefined environment variable CMEMS_USERNAME")
@@ -199,14 +177,13 @@ class CMEMS(object):
             password = getpass.getpass(
                 "Please provide the password for accessing CMEMS : "
             )
-        self.session = setup_session(cas_url, username, password)
-        # The following will throw an exception in case of invalid credentials
-        if "CASTGC" not in self.session.cookies.get_dict():
-            logging.error(
-                "Cannot find the CASTGC key in the session object, the credentials are certainly invalid"
-            )
-            raise ValueError("Invalid credentials")
-        self.session.cookies.set("CASTGC", self.session.cookies.get_dict()["CASTGC"])
+
+        logged_in = copernicusmarine.login(
+            username=username, password=password, overwrite_configuration_file=True
+        )
+        if not logged_in:
+            raise RuntimeError("Login to cmems unsucessfull, aborting...")
+
         logging.info("Connection to cmems successfull")
         self.datastores = {}
 
