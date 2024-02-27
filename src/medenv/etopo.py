@@ -130,4 +130,4 @@ def is_land(long_lat):
     # This is_land is pretty long,
     # prefer using the woa.is_land function
     long0, lat0 = long_lat
-    return get_value(long0, lat0) >= 0
+    return get_value(long0, lat0)[0] >= 0
